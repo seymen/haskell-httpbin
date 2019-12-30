@@ -23,7 +23,6 @@ dependencies:
 - scotty
 - aeson
 - text
-- unordered-containers
 
 library:
   source-dirs: src
