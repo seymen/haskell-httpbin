@@ -13,4 +13,5 @@ routes :: ScottyM ()
 routes = getRoute
 
 getRoute :: ScottyM ()
-getRoute = get "/" getHandler
+-- getRoute = get "/" getHandler
+getRoute = get (regex ".*") getHandler

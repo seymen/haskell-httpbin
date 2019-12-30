@@ -23,6 +23,8 @@ dependencies:
 - scotty
 - aeson
 - text
+- wai
+- bytestring
 
 library:
   source-dirs: src
