@@ -5,6 +5,7 @@ module GetHandler where
 
 import           Data.Aeson
 import           Data.Aeson.Types     as AT
+import           Data.ByteString      (ByteString)
 import qualified Data.ByteString      as B
 import           Data.Maybe
 import qualified Data.Text            as T
@@ -12,6 +13,7 @@ import           Data.Text.Encoding
 import qualified Data.Text.Lazy       as L
 import           GHC.Generics
 import qualified Network.Wai.Internal as W
+import           Web.Scotty           (ActionM, request)
 import qualified Web.Scotty           as S
 
 data Response = Response {
@@ -29,24 +31,29 @@ newtype Headers = Headers [(L.Text, L.Text)]
 instance ToJSON Headers where
   toJSON (Headers hs) = object $ map lazyTextToJsonPair hs
 
-newtype QueryStrings = QueryStrings [(L.Text, L.Text)]
+newtype QueryStrings = QueryStrings [(ByteString, Maybe ByteString)]
   deriving (Show)
 
 instance ToJSON QueryStrings where
-  toJSON (QueryStrings qs) = object $ map lazyTextToJsonPair qs
+  toJSON (QueryStrings qs) = object $ map queryToJsonPair qs
 
 lazyTextToJsonPair :: (L.Text, L.Text) -> AT.Pair
 lazyTextToJsonPair (a, b) = L.toStrict a .= b
+
+queryToJsonPair :: (ByteString, Maybe ByteString) -> AT.Pair
+queryToJsonPair (a, m) = x .= y
+  where x = decodeUtf8 a
+        y = decodeUtf8 $ fromMaybe B.empty m
 
 generateFullUrl :: Bool -> T.Text -> T.Text -> T.Text -> T.Text
 generateFullUrl secure host path query = http <> "://" <> host <> path <> query
   where http = if secure then "https" else "http"
 
-getHandler :: S.ActionM ()
+getHandler :: ActionM ()
 getHandler = do
-  req <- S.request
+  req <- request
   headers <- S.headers
-  params <- S.params
+  let params = W.queryString req
   let isSecure = W.isSecure req
   let host = decodeUtf8 $ fromMaybe B.empty $ W.requestHeaderHost req
   let path = decodeUtf8 $ W.rawPathInfo req
